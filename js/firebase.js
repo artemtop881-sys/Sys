@@ -1,12 +1,28 @@
 // ==================== FIREBASE КОНФИГУРАЦИЯ ====================
 // Это твоя личная база данных в облаке
 const firebaseConfig = {
-    apiKey: "AIzaSyBpT1rLJqZxGxGxGxGxGxGxGxGxGxGxGxGx",
-    authDomain: "security-message.firebaseapp.com",
-    projectId: "security-message",
-    storageBucket: "security-message.appspot.com",
-    messagingSenderId: "123456789012",
-    appId: "1:123456789012:web:abcdef123456"
+    apiKey: // Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+import { getAnalytics } from "firebase/analytics";
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+const firebaseConfig = {
+  apiKey: "AIzaSyAywPbtEKtCASciyVxL-mpEolL4YJlJ7YU",
+  authDomain: "security-message-df5c4.firebaseapp.com",
+  projectId: "security-message-df5c4",
+  storageBucket: "security-message-df5c4.firebasestorage.app",
+  messagingSenderId: "936862359256",
+  appId: "1:936862359256:web:cccb8f8d3c0bb899c881ad",
+  measurementId: "G-SYB98C8REE"
+};
+
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+const analytics = getAnalytics(app);
+бро,это?
 };
 
 // Инициализация Firebase
