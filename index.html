@@ -1,0 +1,330 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>Security Message · Глобальный чат</title>
+    
+    <!-- Firebase SDK -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-firestore-compat.js"></script>
+    
+    <!-- Font Awesome -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+    
+    <!-- Наши стили -->
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body class="theme-neon-blue" id="body">
+    <div class="phone-frame" id="app">
+        <!-- ЭКРАН АВТОРИЗАЦИИ -->
+        <div id="authScreen" class="auth-screen">
+            <div class="auth-container">
+                <div class="auth-logo">
+                    <i class="fas fa-shield-hal"></i>
+                </div>
+                <h1 class="auth-title">SECURITY</h1>
+                <div class="auth-subtitle">Глобальный чат • Стикеры • Избранное</div>
+                
+                <div id="loginForm" class="auth-form">
+                    <div class="auth-input-group">
+                        <input type="text" id="loginUsername" class="auth-input" placeholder="Логин или @юзернейм">
+                    </div>
+                    <div class="auth-input-group">
+                        <input type="password" id="loginPassword" class="auth-input" placeholder="Пароль">
+                    </div>
+                    <button class="auth-button" onclick="window.auth.login()">ВОЙТИ</button>
+                    <div class="auth-switch" onclick="window.auth.showRegister()">
+                        <span>Создать аккаунт</span>
+                    </div>
+                </div>
+
+                <div id="registerForm" class="auth-form hidden">
+                    <div class="auth-input-group">
+                        <input type="text" id="regName" class="auth-input" placeholder="Имя">
+                    </div>
+                    <div class="auth-input-group">
+                        <input type="text" id="regUsername" class="auth-input" placeholder="@юзернейм">
+                    </div>
+                    <div class="auth-input-group">
+                        <input type="password" id="regPassword" class="auth-input" placeholder="Пароль">
+                    </div>
+                    <div class="auth-input-group">
+                        <textarea id="regBio" class="auth-input" placeholder="О себе (необязательно)" style="height: 80px; resize: none;"></textarea>
+                    </div>
+                    <button class="auth-button" onclick="window.auth.register()">СОЗДАТЬ</button>
+                    <div class="auth-switch" onclick="window.auth.showLogin()">
+                        <span>Уже есть аккаунт</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- ОСНОВНОЙ ИНТЕРФЕЙС -->
+        <div id="mainScreen" class="main-screen hidden">
+            <div class="main-header">
+                <h1>
+                    <i class="fas fa-shield-hal" style="color: var(--accent);"></i>
+                    SECURITY
+                </h1>
+                <div class="header-icons">
+                    <i class="fas fa-star" onclick="window.favorites.open()"></i>
+                    <i class="fas fa-cog" onclick="window.settings.open()"></i>
+                </div>
+            </div>
+
+            <div class="nav-tabs">
+                <button class="nav-tab active" onclick="window.chats.switchTab('chats', this)">
+                    <i class="fas fa-comment"></i> Чаты
+                </button>
+                <button class="nav-tab" onclick="window.chats.switchTab('global', this)">
+                    <i class="fas fa-globe"></i> Глобальный
+                </button>
+                <button class="nav-tab" onclick="window.chats.switchTab('users', this)">
+                    <i class="fas fa-users"></i> Люди
+                </button>
+            </div>
+
+            <div class="search-section">
+                <div class="search-box">
+                    <i class="fas fa-search"></i>
+                    <input type="text" id="globalSearch" placeholder="Поиск людей..." onkeyup="window.chats.searchUsers()">
+                </div>
+            </div>
+
+            <div class="main-content" id="contentArea">
+                <div id="chatsContent">
+                    <div class="chats-list" id="chatsList"></div>
+                </div>
+                <div id="globalContent" class="hidden">
+                    <div class="chats-list" id="globalMessages"></div>
+                </div>
+                <div id="usersContent" class="hidden">
+                    <div class="chats-list" id="usersList"></div>
+                </div>
+            </div>
+
+            <div class="bottom-nav">
+                <div class="nav-item active" onclick="window.chats.switchMainTab('chats', this)">
+                    <i class="fas fa-comment"></i>
+                    <span>Чаты</span>
+                </div>
+                <div class="nav-item" onclick="window.profile.open()">
+                    <i class="fas fa-user"></i>
+                    <span>Профиль</span>
+                </div>
+                <div class="nav-item" onclick="window.favorites.open()">
+                    <i class="fas fa-star"></i>
+                    <span>Избранное</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ЧАТА -->
+        <div id="chatScreen" class="chat-screen hidden">
+            <div class="chat-header">
+                <div class="back-button" onclick="window.chats.closeChat()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <div class="header-avatar" id="chatHeaderAvatar">
+                    <span id="chatAvatarText">U</span>
+                </div>
+                <div class="header-info">
+                    <div class="header-title" id="chatHeaderTitle">Пользователь</div>
+                    <div class="header-status" id="chatHeaderStatus">онлайн</div>
+                </div>
+                <div class="chat-actions">
+                    <i class="fas fa-smile" onclick="window.chats.toggleStickers()"></i>
+                    <i class="fas fa-star" onclick="window.favorites.addFromChat()"></i>
+                </div>
+            </div>
+
+            <div class="messages-container" id="messagesContainer"></div>
+
+            <div id="stickerPicker" class="sticker-picker hidden">
+                <div class="sticker-item" onclick="window.chats.sendSticker('🍒')">🍒</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('❤️')">❤️</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('🔥')">🔥</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('✨')">✨</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('🌟')">🌟</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('🎈')">🎈</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('🎉')">🎉</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('💫')">💫</div>
+                <div class="sticker-item" onclick="window.chats.sendSticker('⭐')">⭐</div>
+            </div>
+
+            <div class="message-input-area">
+                <input type="text" id="messageInput" placeholder="Сообщение..." onkeypress="if(event.key==='Enter') window.chats.sendMessage()">
+                <i class="fas fa-paper-plane" onclick="window.chats.sendMessage()"></i>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ПРОФИЛЯ -->
+        <div id="profileScreen" class="profile-screen hidden">
+            <div class="profile-header-bar">
+                <div class="back-button" onclick="window.profile.close()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <h2>Мой профиль</h2>
+            </div>
+
+            <div class="profile-header">
+                <div class="profile-avatar-large" id="profileAvatarLarge" onclick="window.profile.changeAvatar()">
+                    <span id="profileAvatarText">U</span>
+                    <i class="fas fa-camera"></i>
+                </div>
+                <div class="profile-name" id="profileNameLarge">
+                    Username
+                    <span id="profileVerifiedBadge" class="hidden"><i class="fas fa-check-circle"></i></span>
+                </div>
+                <div class="profile-username" id="profileUsernameLarge">@username</div>
+                <div class="profile-id" id="profileId">ID: 0</div>
+                <div class="profile-balance" id="profileBalance">
+                    <i class="fas fa-star"></i> <span id="balanceAmount">0</span>
+                </div>
+                <div class="profile-bio" id="profileBioText">Привет! Я в Security</div>
+            </div>
+
+            <div class="profile-settings">
+                <div class="settings-item" onclick="window.profile.changeName()">
+                    <span class="settings-label">Имя</span>
+                    <span class="settings-value" id="settingsName">Username</span>
+                </div>
+                <div class="settings-item" onclick="window.profile.changeUsername()">
+                    <span class="settings-label">Юзернейм</span>
+                    <span class="settings-value" id="settingsUsername">@username</span>
+                </div>
+                <div class="settings-item" onclick="window.profile.changeBio()">
+                    <span class="settings-label">О себе</span>
+                    <span class="settings-value" id="settingsBio">Привет!</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН ИЗБРАННОГО -->
+        <div id="favoritesScreen" class="favorites-screen hidden">
+            <div class="favorites-header-bar">
+                <div class="back-button" onclick="window.favorites.close()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <h2>Избранное</h2>
+            </div>
+
+            <div class="favorites-section">
+                <div class="favorites-header">
+                    <div class="favorites-title">
+                        <i class="fas fa-star"></i> Мои заметки
+                    </div>
+                    <button class="add-favorite-btn" onclick="window.favorites.showAddModal()">
+                        <i class="fas fa-plus"></i> Добавить
+                    </button>
+                </div>
+                <div id="favoritesList"></div>
+            </div>
+        </div>
+
+        <!-- ЭКРАН НАСТРОЕК -->
+        <div id="settingsScreen" class="settings-screen hidden">
+            <div class="settings-header-bar">
+                <div class="back-button" onclick="window.settings.close()">
+                    <i class="fas fa-arrow-left"></i>
+                </div>
+                <h2>Настройки</h2>
+            </div>
+
+            <div class="settings-section">
+                <div class="settings-group-label">ТЕМЫ</div>
+                <div class="themes-grid">
+                    <div class="theme-option" onclick="window.settings.setTheme('neon-blue')" style="background: #3b82f6;"></div>
+                    <div class="theme-option" onclick="window.settings.setTheme('neon-red')" style="background: #ef4444;"></div>
+                    <div class="theme-option" onclick="window.settings.setTheme('neon-green')" style="background: #10b981;"></div>
+                    <div class="theme-option" onclick="window.settings.setTheme('neon-purple')" style="background: #a855f7;"></div>
+                </div>
+
+                <div id="adminPanelContainer" class="hidden">
+                    <div class="settings-group-label">АДМИН-ПАНЕЛЬ</div>
+                    <div class="settings-item" onclick="window.admin.showPanel()">
+                        <i class="fas fa-crown"></i>
+                        <div class="settings-item-content">
+                            <div class="settings-item-title">Управление</div>
+                            <div class="settings-item-subtitle">Выдача галочек, звёзд, админки</div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="settings-group-label">АККАУНТ</div>
+                <div class="settings-item" onclick="window.auth.logout()">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <div class="settings-item-content">
+                        <div class="settings-item-title">Выйти</div>
+                        <div class="settings-item-subtitle">Завершить сеанс</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА ДОБАВЛЕНИЯ ЗАМЕТКИ -->
+    <div id="addFavoriteModal" class="modal hidden">
+        <div class="modal-content">
+            <h2><i class="fas fa-star"></i> Новая заметка</h2>
+            <textarea id="favoriteText" placeholder="Текст заметки..." style="height: 120px;"></textarea>
+            <button onclick="window.favorites.add()">Сохранить</button>
+            <div class="modal-close" onclick="window.ui.closeModal('addFavoriteModal')">Отмена</div>
+        </div>
+    </div>
+
+    <!-- МОДАЛКА АДМИН-ПАНЕЛИ -->
+    <div id="adminPanelModal" class="modal hidden">
+        <div class="modal-content admin-modal">
+            <h2><i class="fas fa-crown"></i> Админ-панель</h2>
+            
+            <div class="stats-section">
+                <h3>📊 СТАТИСТИКА</h3>
+                <div class="stats-grid">
+                    <div class="stat-item">
+                        <span class="stat-label">Пользователей:</span>
+                        <span class="stat-value" id="statsUsers">0</span>
+                    </div>
+                    <div class="stat-item">
+                        <span class="stat-label">Сообщений:</span>
+                        <span class="stat-value" id="statsMessages">0</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="admin-section">
+                <h3>✅ ВЫДАТЬ ГАЛОЧКУ</h3>
+                <select id="verifyUserSelect" class="admin-select"></select>
+                <button onclick="window.admin.verifyUser()">Подтвердить</button>
+            </div>
+
+            <div class="admin-section">
+                <h3>⭐ ВЫДАТЬ ЗВЁЗДЫ</h3>
+                <select id="starsUserSelect" class="admin-select"></select>
+                <input type="number" id="starsAmountAdmin" placeholder="Количество звёзд">
+                <button class="gold-button" onclick="window.admin.giveStars()">Выдать</button>
+            </div>
+
+            <div class="admin-section">
+                <h3>👑 НАЗНАЧИТЬ АДМИНА</h3>
+                <select id="adminUserSelect" class="admin-select"></select>
+                <button class="gold-button" onclick="window.admin.makeAdmin()">Назначить</button>
+            </div>
+
+            <div class="modal-close" onclick="window.ui.closeModal('adminPanelModal')">Закрыть</div>
+        </div>
+    </div>
+
+    <!-- Наши JavaScript файлы -->
+    <script src="js/firebase.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/chat.js"></script>
+    <script src="js/profile.js"></script>
+    <script src="js/favorites.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/settings.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/main.js"></script>
+</body>
+  </html>
